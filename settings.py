@@ -20,11 +20,12 @@ OFF_WHITE   = (235, 238, 240)
 
 DARK_GREEN  = (18,  92,  48)
 MID_GREEN   = (26, 122,  62)
-STRIPE_DARK = (22, 108,  56)
-STRIPE_LIGHT= (28, 130,  66)
+STRIPE_DARK = (20, 100,  44)
+STRIPE_LIGHT= (24, 118,  54)
 
-SKY_TOP     = (8,  14,  28)
-SKY_BOTTOM  = (22, 42,  74)
+# Realistic daytime sky
+SKY_TOP     = (82, 130, 190)
+SKY_BOTTOM  = (148, 190, 230)
 
 GOLD        = (232, 176,  32)
 GOLD_DARK   = (180, 130,  20)
@@ -35,39 +36,40 @@ GRAY        = (140, 150, 164)
 DARK_GRAY   = ( 40,  44,  54)
 PANEL       = ( 14,  18,  28)
 
-KEEPER_KIT      = (240, 176,  32)
-KEEPER_KIT_DARK = (190, 136,  16)
-SKIN            = (212, 160, 112)
+# Keeper – bright lime green for visibility
+KEEPER_KIT      = ( 80, 200,  80)
+KEEPER_KIT_DARK = ( 50, 150,  50)
+SKIN            = (210, 162, 108)
 
-# Box colors by value tier
+# Box colors
 BOX_BROWN       = (139,  99,  64)
-BOX_BROWN_LIGHT = (160, 120,  80)
+BOX_BROWN_LIGHT = (168, 128,  88)
 
 # ---------------------------------------------------------------------------
 # Field geometry
 # ---------------------------------------------------------------------------
-FIELD_TOP_Y    = 130
-FIELD_BOTTOM_Y = HEIGHT - 40
+FIELD_TOP_Y    = 140
+FIELD_BOTTOM_Y = HEIGHT - 30
 
 GOAL_CENTER_X  = WIDTH  // 2
-GOAL_WIDTH     = 340
-GOAL_HEIGHT    = 168
-GOAL_TOP_Y     = FIELD_TOP_Y - 18
-GOAL_POST_THICK= 8
+GOAL_WIDTH     = 380
+GOAL_HEIGHT    = 185
+GOAL_TOP_Y     = FIELD_TOP_Y - 20
+GOAL_POST_THICK= 9
 
-PENALTY_SPOT        = (WIDTH // 2, FIELD_BOTTOM_Y - 60)
+PENALTY_SPOT        = (WIDTH // 2, FIELD_BOTTOM_Y - 50)
 PENALTY_BALL_RADIUS = 15
 GOAL_BALL_RADIUS    = 6
 
 # Mystery box grid inside goal
 BOX_COLS = 11
 BOX_ROWS =  8
-BOX_PAD  =  2          # px gap between boxes
+BOX_PAD  =  2
 
-# Aim zones (x centre of each column-third)
-LEFT_ZONE_X   = GOAL_CENTER_X - 110
+# Aim zones
+LEFT_ZONE_X   = GOAL_CENTER_X - 120
 CENTER_ZONE_X = GOAL_CENTER_X
-RIGHT_ZONE_X  = GOAL_CENTER_X + 110
+RIGHT_ZONE_X  = GOAL_CENTER_X + 120
 ZONES      = {"LEFT": LEFT_ZONE_X, "CENTER": CENTER_ZONE_X, "RIGHT": RIGHT_ZONE_X}
 ZONE_NAMES = ["LEFT", "CENTER", "RIGHT"]
 
@@ -75,18 +77,19 @@ ZONE_NAMES = ["LEFT", "CENTER", "RIGHT"]
 # Timings (seconds)
 # ---------------------------------------------------------------------------
 WINDUP_TIME = 0.30
-SHOT_TIME   = 0.80
+SHOT_TIME   = 0.75
 
 # ---------------------------------------------------------------------------
-# Box point values  (value: relative_weight)
+# Box point values 1-6  (value: relative_weight)
+# 1 is common, 6 is rare
 # ---------------------------------------------------------------------------
 BOX_VALUE_TABLE = [
-    (500, 1),
-    (200, 3),
-    (100, 8),
-    ( 50, 16),
-    ( 25, 22),
-    ( 10, 30),
+    (6, 2),
+    (5, 5),
+    (4, 10),
+    (3, 18),
+    (2, 28),
+    (1, 37),
 ]
 
 # ---------------------------------------------------------------------------
