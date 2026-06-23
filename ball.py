@@ -1,13 +1,10 @@
 """
 ball.py
-The football itself: drawn procedurally and animated from the penalty spot
-to the goal line using an eased trajectory with a simulated 3D shrink (depth).
+Ball with curved arc trajectory, spin, and perspective shrink.
 """
 
 import math
-
 import pygame
-
 from settings import PENALTY_SPOT, PENALTY_BALL_RADIUS, GOAL_BALL_RADIUS
 
 
@@ -20,38 +17,41 @@ class Ball:
         self.reset()
 
     def reset(self):
-        self.x, self.y = PENALTY_SPOT
-        self.start_pos = PENALTY_SPOT
-        self.target_pos = PENALTY_SPOT
-        self.radius = PENALTY_BALL_RADIUS
-        self.progress = 1.0
-        self.duration = 1.0
-        self.moving = False
-        self.rotation = 0.0
+        self.x, self.y   = PENALTY_SPOT
+        self.start_pos   = PENALTY_SPOT
+        self.target_pos  = PENALTY_SPOT
+        self.radius      = PENALTY_BALL_RADIUS
+        self.progress    = 1.0
+        self.duration    = 1.0
+        self.moving      = False
+        self.rotation    = 0.0
+        self._arc_height = 0.0   # mid-flight rise (pixels)
 
-    def shoot(self, target_pos, duration):
-        self.start_pos = PENALTY_SPOT
-        self.target_pos = target_pos
-        self.duration = max(0.01, duration)
-        self.progress = 0.0
-        self.moving = True
+    def shoot(self, target_pos, duration, power=0.5):
+        self.start_pos   = PENALTY_SPOT
+        self.target_pos  = target_pos
+        self.duration    = max(0.01, duration)
+        self.progress    = 0.0
+        self.moving      = True
+        # Higher power = flatter arc; low power = more lofted
+        self._arc_height = (1.0 - power) * 60
 
     def update(self, dt):
         if not self.moving:
             return
-
         self.progress += dt / self.duration
-        self.rotation += dt * 720
-
+        self.rotation += dt * 680
         if self.progress >= 1.0:
             self.progress = 1.0
-            self.moving = False
+            self.moving   = False
 
-        t = ease_out_cubic(self.progress)
+        t  = ease_out_cubic(self.progress)
         sx, sy = self.start_pos
         tx, ty = self.target_pos
         self.x = sx + (tx - sx) * t
-        self.y = sy + (ty - sy) * t
+        # Arc: sin curve lifts ball in first half of flight
+        arc    = math.sin(self.progress * math.pi) * self._arc_height
+        self.y = sy + (ty - sy) * t - arc
         self.radius = PENALTY_BALL_RADIUS + (GOAL_BALL_RADIUS - PENALTY_BALL_RADIUS) * t
 
     @property
@@ -59,27 +59,29 @@ class Ball:
         return self.progress >= 1.0 and not self.moving
 
     def draw(self, surface):
-        radius = max(2, int(self.radius))
+        r = max(2, int(self.radius))
+        ix, iy = int(self.x), int(self.y)
 
-        # Ground shadow - helps sell the depth/perspective illusion.
-        shadow_w = max(6, int(radius * 1.6))
-        shadow_h = max(3, int(radius * 0.55))
-        shadow = pygame.Surface((shadow_w * 2, shadow_h * 2), pygame.SRCALPHA)
-        pygame.draw.ellipse(shadow, (0, 0, 0, 90), (0, 0, shadow_w * 2, shadow_h * 2))
-        surface.blit(shadow, (self.x - shadow_w, self.y + radius * 0.6 - shadow_h))
+        # Ground shadow (follows x; stays on ground)
+        sw = max(6, int(r * 1.7))
+        sh = max(3, int(r * 0.5))
+        shadow = pygame.Surface((sw * 2, sh * 2), pygame.SRCALPHA)
+        pygame.draw.ellipse(shadow, (0, 0, 0, 80), (0, 0, sw * 2, sh * 2))
+        surface.blit(shadow, (ix - sw, iy + r - sh + 4))
 
         # Ball body
-        pygame.draw.circle(surface, (235, 235, 235), (int(self.x), int(self.y)), radius)
-        pygame.draw.circle(surface, (40, 40, 40), (int(self.x), int(self.y)), radius, 1)
+        pygame.draw.circle(surface, (238, 238, 238), (ix, iy), r)
+        pygame.draw.circle(surface, (40,  40,  40),  (ix, iy), r, 1)
 
-        # Rotating pentagon pattern for a classic football look
+        # Pentagon panels
         for i in range(5):
             angle = math.radians(self.rotation + i * 72)
-            px = self.x + math.cos(angle) * radius * 0.45
-            py = self.y + math.sin(angle) * radius * 0.45
-            r = max(1, int(radius * 0.22))
-            pygame.draw.circle(surface, (35, 35, 35), (int(px), int(py)), r)
+            px = ix + math.cos(angle) * r * 0.44
+            py = iy + math.sin(angle) * r * 0.44
+            pr = max(1, int(r * 0.22))
+            pygame.draw.circle(surface, (30, 30, 30), (int(px), int(py)), pr)
 
-        # Glossy highlight for a 3D feel
-        hl_pos = (int(self.x - radius * 0.35), int(self.y - radius * 0.35))
-        pygame.draw.circle(surface, (255, 255, 255), hl_pos, max(1, int(radius * 0.3)))
+        # Gloss highlight
+        pygame.draw.circle(surface, (255, 255, 255),
+                           (ix - int(r * 0.34), iy - int(r * 0.34)),
+                           max(1, int(r * 0.28)))

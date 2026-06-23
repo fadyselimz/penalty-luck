@@ -1,13 +1,10 @@
 """
 main.py
-Entry point for the Penalty Shootout game. Creates the window and runs the
-main loop at a fixed 60 FPS, delegating all logic to the Game class.
+Entry point for Penalty Luck.
 """
 
 import sys
-
 import pygame
-
 from game import Game
 from settings import WIDTH, HEIGHT, FPS, TITLE
 
@@ -19,18 +16,14 @@ def main():
     clock = pygame.time.Clock()
 
     game = Game(screen)
-
     running = True
     while running:
         dt = clock.tick(FPS) / 1000.0
-
         for event in pygame.event.get():
             game.handle_event(event)
-
         if game.request_quit:
             running = False
             continue
-
         game.update(dt)
         game.draw()
 
