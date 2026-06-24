@@ -117,7 +117,7 @@ class Game:
         cx = WIDTH // 2
         self.btn_start     = Button((cx-130, 470, 260, 56), "START GAME", base_color=GOLD, text_color=(30,20,0))
         self.btn_quit_menu = Button((cx-130, 540, 260, 50), "QUIT",       base_color=RED)
-        self.btn_shoot     = Button((cx-120, HEIGHT-88, 240, 56), "AIM", base_color=BLUE)
+        self.btn_shoot     = Button((cx-120, HEIGHT-88, 240, 56), "Shoot", base_color=BLUE)
         self.btn_restart   = Button((cx-130, HEIGHT-88, 260, 56), "NEXT TURN",  base_color=BLUE)
         self.btn_menu_top  = Button((20, 16, 100, 38),     "MENU",  base_color=DARK_GRAY, font_size=16)
         self.btn_quit_top  = Button((WIDTH-120, 16, 100, 38), "QUIT", base_color=RED,      font_size=16)

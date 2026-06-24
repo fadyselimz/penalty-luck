@@ -1,7 +1,7 @@
 {
-    "total_score": 378,
-    "games_played": 35,
-    "goals_scored": 24,
+    "total_score": 528,
+    "games_played": 37,
+    "goals_scored": 26,
     "match_active": true,
     "match_finished": false,
     "team_names": [
@@ -9,16 +9,16 @@
         "Team 2"
     ],
     "team_scores": [
-        10,
-        0
+        130,
+        20
     ],
     "team_goals": [
         1,
-        0
+        1
     ],
     "team_shots_taken": [
         1,
-        0
+        1
     ],
     "team_double_chips": [
         2,
