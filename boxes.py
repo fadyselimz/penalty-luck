@@ -1,6 +1,6 @@
 """
 boxes.py
-Mystery-box grid – values are 0 to 6.
+Mystery-box grid – values are 10 to 200.
 """
 
 import random
@@ -19,16 +19,20 @@ def _weighted_value():
     return random.choices(pool, weights=weights, k=1)[0]
 
 
-# Color per value (0-6)
-_TIER_COLOR = {
-    6: (232, 176,  32),   # gold   – jackpot
-    5: (140, 100, 220),   # purple
-    4: (200, 100,  50),   # orange
-    3: ( 60, 160,  80),   # green
-    2: ( 66, 130, 210),   # blue
-    1: (110, 120, 135),   # grey
-    0: ( 80,  88, 100),   # empty
-}
+def _tier_color(value: int):
+    if value >= 180:
+        return (232, 176,  32)   # gold
+    if value >= 150:
+        return (140, 100, 220)   # purple
+    if value >= 120:
+        return (200, 100,  50)   # orange
+    if value >= 90:
+        return ( 60, 160,  80)   # green
+    if value >= 60:
+        return ( 66, 130, 210)   # blue
+    if value >= 30:
+        return (110, 120, 135)   # grey
+    return ( 80,  88, 100)       # dark
 
 
 class BoxGrid:
@@ -177,7 +181,7 @@ class BoxGrid:
 
     def _draw_revealed(self, surface, rect, idx, is_hit):
         val   = self._values[idx]
-        color = _TIER_COLOR.get(val, (100, 110, 125))
+        color = _tier_color(val)
         bg    = color if is_hit else tuple(max(0, c - 90) for c in color)
 
         pygame.draw.rect(surface, bg, rect, border_radius=2)

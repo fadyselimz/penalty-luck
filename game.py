@@ -71,10 +71,9 @@ class Game:
         self.answered_question = False
         self._pending_double = False
         self._pending_shot = None  # dict: {team, is_goal, points, double}
-        self._offside_rects = {}
+        self._hud_offside_rects = {}
         self._pending_offside_by = None
         self._double_rects = {}
-        self._pending_double = False
 
         self.title_font   = get_font(64, bold=True)
         self.subtitle_font= get_font(20)
@@ -118,11 +117,10 @@ class Game:
         cx = WIDTH // 2
         self.btn_start     = Button((cx-130, 470, 260, 56), "START GAME", base_color=GOLD, text_color=(30,20,0))
         self.btn_quit_menu = Button((cx-130, 540, 260, 50), "QUIT",       base_color=RED)
-        self.btn_shoot     = Button((cx-120, HEIGHT-88, 240, 56), "AIM & SHOOT  [SPACE]", base_color=BLUE)
+        self.btn_shoot     = Button((cx-120, HEIGHT-88, 240, 56), "AIM", base_color=BLUE)
         self.btn_restart   = Button((cx-130, HEIGHT-88, 260, 56), "NEXT TURN",  base_color=BLUE)
         self.btn_menu_top  = Button((20, 16, 100, 38),     "MENU",  base_color=DARK_GRAY, font_size=16)
         self.btn_quit_top  = Button((WIDTH-120, 16, 100, 38), "QUIT", base_color=RED,      font_size=16)
-        self.btn_continue = Button((cx-130, 400, 260, 56), "CONTINUE", base_color=BLUE)
 
         self.btn_team_down    = Button((cx - 170, 230, 52, 44), "-", base_color=DARK_GRAY, font_size=28)
         self.btn_team_up      = Button((cx + 118, 230, 52, 44), "+", base_color=DARK_GRAY, font_size=28)
@@ -218,9 +216,8 @@ class Game:
             return
 
         if self.state == STATE_MENU:
-            if self.has_saved_match and self.btn_continue.is_clicked(event):
-                self.sounds.play("click"); self._restore_saved_match()
-            elif self.btn_start.is_clicked(event):
+            if self.btn_start.is_clicked(event):
+                self.sounds.play("click"); self._clear_saved_match(); self._go_to_setup()
                 self.sounds.play("click"); self._clear_saved_match(); self._go_to_setup()
             elif self.btn_quit_menu.is_clicked(event):
                 self._save_game_data()
@@ -290,6 +287,7 @@ class Game:
                 if self.btn_confirm_yes.is_clicked(event):
                     # confirmed — proceed to aiming (pending double reserved earlier if used)
                     self.awaiting_confirm = False
+                    self.answered_question = True
                     self._go_to_aiming()
                 elif self.btn_confirm_no.is_clicked(event):
                     # skip turn — refund any reserved double
@@ -300,6 +298,7 @@ class Game:
                             self.match.double_chips[cur] += 1
                         self._pending_double = False
                     self.awaiting_confirm = False
+                    self.answered_question = False
                     # advance turn without taking shot
                     if self.match.active:
                         self.match.advance_turn()
@@ -343,24 +342,26 @@ class Game:
                 self.request_quit = True
 
         elif self.state == STATE_RESULT:
-            # allow offside challenge by other teams (clicking their offside rect)
+            # allow offside challenge by other teams by clicking the HUD offside chip
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 pos = event.pos
-                for ti, rect in list(self._offside_rects.items()):
+                for ti, rect in list(self._hud_offside_rects.items()):
                     if rect.collidepoint(pos):
-                        # do not allow offside if the scoring team used a double chip
-                        if self._pending_shot and self._pending_shot.get('double'):
+                        if not (self._pending_shot and self._pending_shot.get('is_goal') and self.match.active):
                             break
-                        # apply offside if team has chips and is not the scoring team
-                        if ti < len(self.match.offside_chips) and self.match.offside_chips[ti] > 0 and ti != self._pending_shot.get('team'):
-                            # consume chip and cancel pending goal
+                        # do not allow offside if the scoring team used a double chip
+                        if self._pending_shot.get('double'):
+                            break
+                        # only other teams may challenge
+                        if ti == self._pending_shot.get('team'):
+                            break
+                        if ti < len(self.match.offside_chips) and self.match.offside_chips[ti] > 0:
                             self.match.offside_chips[ti] -= 1
                             self._pending_offside_by = ti
-                            if self._pending_shot and self._pending_shot.get('is_goal'):
-                                self._pending_shot['is_goal'] = False
-                                self._pending_is_goal = False
-                                self.last_result_text = "DISALLOWED!"
-                                self.last_points_text = ""
+                            self._pending_shot['is_goal'] = False
+                            self._pending_is_goal = False
+                            self.last_result_text = "DISALLOWED!"
+                            self.last_points_text = ""
                         break
             if self.btn_restart.is_clicked(event):
                 self.sounds.play("click")
@@ -529,7 +530,7 @@ class Game:
     # ------------------------------------------------------------------
     def update(self, dt):
         mouse_pos = pygame.mouse.get_pos()
-        for btn in (self.btn_start, self.btn_quit_menu, self.btn_continue, self.btn_shoot,
+        for btn in (self.btn_start, self.btn_quit_menu, self.btn_shoot,
             self.btn_restart, self.btn_menu_top, self.btn_quit_top,
             self.btn_team_down, self.btn_team_up, self.btn_start_match,
             self.btn_setup_back, self.btn_new_match, self.btn_match_menu,
@@ -575,10 +576,6 @@ class Game:
         text_with_shadow(s, self.title_font, "PENALTY LUCK", GOLD, (WIDTH//2, 150), center=True)
         text_with_shadow(s, self.subtitle_font, "Teams · Turns · Mystery boxes!",
                          (210, 215, 225), (WIDTH//2, 208), center=True)
-        panel_rect = pygame.Rect(WIDTH//2-240, 252, 480, 192)
-        draw_scoreboard(s, panel_rect, self.stats, title="CAREER STATS")
-        if self.has_saved_match:
-            self.btn_continue.draw(s)
         self.btn_start.draw(s)
         self.btn_quit_menu.draw(s)
         text_with_shadow(s, self.hint_font,
@@ -590,7 +587,7 @@ class Game:
         s.blit(self.menu_bg, (0, 0))
         text_with_shadow(s, self.setup_font, "TEAM SETUP", GOLD, (WIDTH // 2, 72), center=True)
         text_with_shadow(s, self.subtitle_font,
-                         "Take turns shooting — press END GAME when finished",
+                         "Take turns aiming — press END GAME when finished",
                          (190, 200, 215), (WIDTH // 2, 112), center=True)
 
         cx = WIDTH // 2
@@ -664,8 +661,6 @@ class Game:
                              (WIDTH // 2, HEIGHT - 130), center=True)
             text_with_shadow(s, self.hint_font, self.match.shot_label(),
                              (220, 225, 235), (WIDTH // 2, HEIGHT - 100), center=True)
-            text_with_shadow(s, self.hint_font, "Press the button or SPACE to aim",
-                             (180, 190, 205), (WIDTH // 2, HEIGHT - 72), center=True)
             if self.awaiting_confirm:
                 # draw confirmation panel
                 panel = pygame.Rect(WIDTH//2 - 220, HEIGHT - 260, 440, 140)
@@ -752,7 +747,7 @@ class Game:
         slot_w = (strip_w - 16) // n
         # reset HUD click rects
         self._double_rects = {}
-        self._offside_rects = {}
+        self._hud_offside_rects = {}
         for i in range(n):
             cx = pill.x + 8 + slot_w * i + slot_w // 2
             color = self.match.color_for(i)
@@ -795,7 +790,7 @@ class Game:
             text_with_shadow(surface, self.hint_font, "OFF", off_txt_col, off_rect.center, center=True)
             # store rects for clicks
             self._double_rects[i] = chip_rect
-            self._offside_rects[i] = off_rect
+            self._hud_offside_rects[i] = off_rect
 
     def _draw_result_text(self, surface):
         color = GREEN_GOAL if self._pending_is_goal else RED
@@ -816,23 +811,10 @@ class Game:
         text_with_shadow(surface, self.hint_font, "Press END GAME anytime to finish the match",
                          (150, 160, 175), (WIDTH // 2, HEIGHT // 2 + 108), center=True)
 
-        # draw offside challenge buttons for other teams when there's a pending goal
-        self._offside_rects = {}
         if self._pending_shot and self._pending_shot.get('is_goal') and self.match.active:
-            n = self.match.team_count
-            start_x = WIDTH//2 - (n * 110) // 2
-            y = surface.get_height() - 160
-            for i in range(n):
-                if i == self._pending_shot.get('team'):
-                    continue
-                chips = self.match.offside_chips[i] if i < len(self.match.offside_chips) else 0
-                if chips <= 0:
-                    continue
-                rect = pygame.Rect(start_x + i*110, y, 100, 40)
-                draw_panel(surface, rect, radius=8)
-                label = f"{self.match.names[i][:8]} OFFSIDE ({chips})"
-                text_with_shadow(surface, self.hud_font, label, self.match.color_for(i), rect.center, center=True)
-                self._offside_rects[i] = rect
+            hint = "Other teams can click OFF under their name to challenge."
+            text_with_shadow(surface, self.hint_font, hint, WHITE,
+                             (WIDTH//2, surface.get_height() - 120), center=True)
 
     # Helpers used by aiming/scene
     def goal_to_screen(self, nx, ny):
