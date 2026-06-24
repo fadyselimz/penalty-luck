@@ -11,7 +11,7 @@ from settings import WIDTH, HEIGHT, FPS, TITLE
 
 def main():
     pygame.init()
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN | pygame.SCALED)
     pygame.display.set_caption(TITLE)
     clock = pygame.time.Clock()
 

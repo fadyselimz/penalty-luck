@@ -1,6 +1,6 @@
 """
 boxes.py
-Mystery-box grid – values are 1 to 6 (like a dice).
+Mystery-box grid – values are 0 to 6.
 """
 
 import random
@@ -19,14 +19,15 @@ def _weighted_value():
     return random.choices(pool, weights=weights, k=1)[0]
 
 
-# Color per value (1-6 dice-style: 1=grey, 2=blue, 3=green, 4=orange, 5=purple, 6=gold)
+# Color per value (0-6)
 _TIER_COLOR = {
     6: (232, 176,  32),   # gold   – jackpot
     5: (140, 100, 220),   # purple
     4: (200, 100,  50),   # orange
     3: ( 60, 160,  80),   # green
     2: ( 66, 130, 210),   # blue
-    1: (110, 120, 135),   # grey   – lowest
+    1: (110, 120, 135),   # grey
+    0: ( 80,  88, 100),   # empty
 }
 
 
@@ -37,6 +38,11 @@ class BoxGrid:
         self._values:   list[int]  = [_weighted_value() for _ in range(self.cols * self.rows)]
         self._revealed: list[bool] = [False] * (self.cols * self.rows)
         self._hit_index: int       = -1
+        n = len(self._values)
+        self._falling = [False] * n
+        self._fall_offsets = [0.0] * n
+        self._fall_vy = [0.0] * n
+        self._fall_target = [None] * n
 
         bw, bh = self._box_size()
         self._font_q   = get_font(max(9, int(bh * 0.54)), bold=True)
@@ -77,6 +83,35 @@ class BoxGrid:
     def reset_hit(self):
         self._hit_index = -1
 
+    def start_fall(self, index: int, target_floor_y: int):
+        """Begin falling animation for a revealed box toward target floor y (bottom coordinate).
+        `target_floor_y` is the desired pixel y for the bottom of the box when it lands.
+        """
+        n = len(self._values)
+        if not (0 <= index < n):
+            return
+        self._revealed[index] = True
+        self._hit_index = index
+        self._falling[index] = True
+        self._fall_offsets[index] = 0.0
+        self._fall_vy[index] = 0.0
+        self._fall_target[index] = target_floor_y
+
+    def shuffle_and_hide(self):
+        """New random values and hide every box for the next shot."""
+        n = len(self._values)
+        self._values = [_weighted_value() for _ in range(n)]
+        self._revealed = [False] * n
+        self._hit_index = -1
+        self._falling = [False] * n
+        self._fall_offsets = [0.0] * n
+        self._fall_vy = [0.0] * n
+        self._fall_target = [None] * n
+
+    def reveal_all(self):
+        n = len(self._values)
+        self._revealed = [True] * n
+
     # ------------------------------------------------------------------
     def draw(self, surface: pygame.Surface):
         for row in range(self.rows):
@@ -85,9 +120,39 @@ class BoxGrid:
                 rect   = self._box_rect(col, row)
                 is_hit = (idx == self._hit_index)
                 if self._revealed[idx]:
-                    self._draw_revealed(surface, rect, idx, is_hit)
+                    # apply vertical offset if falling
+                    yo = int(self._fall_offsets[idx]) if self._falling[idx] or self._fall_offsets[idx] != 0 else 0
+                    if yo != 0:
+                        rect_draw = rect.move(0, yo)
+                    else:
+                        rect_draw = rect
+                    self._draw_revealed(surface, rect_draw, idx, is_hit)
                 else:
                     self._draw_mystery(surface, rect)
+
+    def update(self, dt: float):
+        """Update any falling boxes (simple gravity simulation)."""
+        n = len(self._values)
+        gravity = 1600.0
+        for idx in range(n):
+            if not self._falling[idx]:
+                continue
+            # integrate velocity/position
+            self._fall_vy[idx] += gravity * dt
+            self._fall_offsets[idx] += self._fall_vy[idx] * dt
+            # compute current bottom y
+            col = idx % self.cols
+            row = idx // self.cols
+            rect = self._box_rect(col, row)
+            current_bottom = rect.bottom + self._fall_offsets[idx]
+            target_bottom = self._fall_target[idx] or (rect.bottom + 9999)
+            if current_bottom >= target_bottom:
+                # land
+                self._fall_offsets[idx] = target_bottom - rect.bottom
+                self._falling[idx] = False
+
+    def any_falling(self) -> bool:
+        return any(self._falling)
 
     def _draw_mystery(self, surface, rect):
         # drop shadow

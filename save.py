@@ -17,6 +17,15 @@ DEFAULT_DATA = {
     "total_score": 0,
     "games_played": 0,
     "goals_scored": 0,
+    "match_active": False,
+    "match_finished": False,
+    "team_names": [],
+    "team_scores": [],
+    "team_goals": [],
+    "team_shots_taken": [],
+    "team_double_chips": [],
+    "team_offside_chips": [],
+    "team_current": 0,
 }
 
 
@@ -31,10 +40,14 @@ def load_data():
             data = json.load(f)
 
         merged = DEFAULT_DATA.copy()
-        for key in DEFAULT_DATA:
-            value = data.get(key, DEFAULT_DATA[key])
-            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
-                value = DEFAULT_DATA[key]
+        for key, default_value in DEFAULT_DATA.items():
+            value = data.get(key, default_value)
+            if isinstance(default_value, int):
+                if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                    value = default_value
+            elif isinstance(default_value, list):
+                if not isinstance(value, list):
+                    value = default_value
             merged[key] = value
         return merged
     except (json.JSONDecodeError, OSError, ValueError, AttributeError):

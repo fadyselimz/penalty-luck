@@ -78,6 +78,49 @@ class Button:
         text_with_shadow(surface, self.font, self.text, text_color, self.rect.center, center=True)
 
 
+class TextInput:
+    def __init__(self, rect, placeholder="", max_len=14, font_size=22):
+        self.rect = pygame.Rect(rect)
+        self.text = ""
+        self.placeholder = placeholder
+        self.max_len = max_len
+        self.active = False
+        self.font = get_font(font_size)
+        self.radius = 10
+
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            self.active = self.rect.collidepoint(event.pos)
+            return self.active
+        if not self.active or event.type != pygame.KEYDOWN:
+            return False
+        if event.key == pygame.K_BACKSPACE:
+            self.text = self.text[:-1]
+            return True
+        if event.key in (pygame.K_RETURN, pygame.K_TAB):
+            self.active = False
+            return True
+        ch = event.unicode
+        if ch and ch.isprintable() and len(self.text) < self.max_len:
+            self.text += ch
+            return True
+        return False
+
+    def draw(self, surface):
+        bg = (28, 36, 52) if self.active else (20, 26, 38)
+        border = GOLD if self.active else (70, 80, 100)
+        pygame.draw.rect(surface, bg, self.rect, border_radius=self.radius)
+        pygame.draw.rect(surface, border, self.rect, width=2, border_radius=self.radius)
+
+        shown = self.text if self.text else self.placeholder
+        color = WHITE if self.text else GRAY
+        surf = self.font.render(shown, True, color)
+        clip = self.rect.inflate(-16, -8)
+        surface.set_clip(clip)
+        surface.blit(surf, (self.rect.x + 12, self.rect.centery - surf.get_height() // 2))
+        surface.set_clip(None)
+
+
 class Particle:
     __slots__ = ("x", "y", "vx", "vy", "size", "color", "life", "max_life", "shape")
 
