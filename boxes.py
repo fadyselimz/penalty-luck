@@ -1,6 +1,6 @@
 """
 boxes.py
-Mystery-box grid – values are 10 to 200.
+Mystery-box grid – values are 10 to 100.
 """
 
 import random
@@ -20,17 +20,17 @@ def _weighted_value():
 
 
 def _tier_color(value: int):
-    if value >= 180:
+    if value >= 100:
         return (232, 176,  32)   # gold
-    if value >= 150:
+    if value >= 85:
         return (140, 100, 220)   # purple
-    if value >= 120:
+    if value >= 70:
         return (200, 100,  50)   # orange
-    if value >= 90:
+    if value >= 55:
         return ( 60, 160,  80)   # green
-    if value >= 60:
+    if value >= 40:
         return ( 66, 130, 210)   # blue
-    if value >= 30:
+    if value >= 20:
         return (110, 120, 135)   # grey
     return ( 80,  88, 100)       # dark
 
